@@ -1,11 +1,46 @@
 
 class RecipesSite:
-    next_id = 0
     all_recipes = {} # maps recipe ID to recipe
     admins = {} # maps admin username to admin
     users = {} # maps user username to user
-    current_user = None
-    current_user_admin = False
+
+    _current_user = None
+    _current_user_admin = False
+    _next_id = 0
+
+    def run_program():
+        RecipesSite.read_from_file()
+        RecipesSite.debug_print_data()
+        while True:
+            if not RecipesSite._current_user:
+                # prompt login
+                RecipesSite.prompt_home()
+            elif RecipesSite._current_user_admin:
+                # prompt admin
+                RecipesSite._current_user.prompt_admin()
+            else:
+                # promt user
+                RecipesSite._current_user.prompt_user()
+
+    def prompt_home():
+        print("\nWelcome! Please type 1-4 to login or create a new account.")
+        print("[1] Login as admin")
+        print("[2] Login as user")
+        print("[3] Create a new admin/user account")
+        print("[4] Exit")
+
+        option = int(input())
+        match option:
+            case 1:
+                RecipesSite.login(login_admin=True)
+            case 2:
+                RecipesSite.login(login_admin=False)
+            case 3:
+                RecipesSite.create_new_acc()
+            case 4:
+                exit(0)
+            case _:
+                print("Not a valid option... please try again")
 
     def print_all_recipe_options():
         if len(RecipesSite.all_recipes) == 0:
@@ -17,27 +52,14 @@ class RecipesSite:
             print(f"[{str(count)}] {recipe.name}")
             count += 1
 
-    def run_program():
-        RecipesSite.read_from_file()
-        RecipesSite.debug_print_data()
-        while True:
-            if not RecipesSite.current_user:
-                # prompt login
-                RecipesSite.prompt_home()
-            elif RecipesSite.current_user_admin:
-                # prompt admin
-                RecipesSite.current_user.prompt_admin()
-            else:
-                # promt user
-                RecipesSite.current_user.prompt_user()
-
-    def login_admin():
+    def login(login_admin):
         prompt_login = True
         while (prompt_login):
-            username = input("\nPlease enter your admin username: ")
+            username = input("\nPlease enter your username: ")
             password = input("Please enter your password: ")
 
-            if username not in RecipesSite.admins or RecipesSite.admins[username].password != password:
+            if (login_admin and (username not in RecipesSite.admins or RecipesSite.admins[username].password != password)) or \
+               ((not login_admin) and (username not in RecipesSite.users or RecipesSite.users[username].password != password)):
                 option = int(input("\nUsername or password is incorrect. \n[1] Try logging in again \n[2] Return home\n"))
                 match option:
                     case 1:
@@ -49,36 +71,15 @@ class RecipesSite:
                         continue
             else:
                 prompt_login = False
-                RecipesSite.current_user_admin = True
-                RecipesSite.current_user = RecipesSite.admins[username]
-
-    def login_user():
-        prompt_login = True
-        while (prompt_login):
-            username = input("\nPlease enter your user username: ")
-            password = input("Please enter your password: ")
-
-            if username not in RecipesSite.users or RecipesSite.users[username].password != password:
-                option = int(input("\nUsername or password is incorrect.\n[1] Try logging in again \n[2] Return home\n"))
-                match option:
-                    case 1:
-                        continue
-                    case 2:
-                        return
-                    case _:
-                        print("Not a valid option... please try again")
-                        continue
-            else:
-                prompt_login = False
-                RecipesSite.current_user_admin = False
-                RecipesSite.current_user = RecipesSite.users[username]
+                RecipesSite._current_user_admin = login_admin
+                RecipesSite._current_user = RecipesSite.admins[username] if login_admin else RecipesSite.users[username]
 
     def find_next_id():
         while(True):
-            if RecipesSite.next_id in RecipesSite.all_recipes:
-                RecipesSite.next_id += 1
+            if RecipesSite._next_id in RecipesSite.all_recipes:
+                RecipesSite._next_id += 1
             else:
-                return RecipesSite.next_id
+                return RecipesSite._next_id
         
     def create_new_acc():
         create_acc = True
@@ -92,8 +93,8 @@ class RecipesSite:
                         continue
                     password = input("Please enter a password: ")
                     RecipesSite.admins[username] = Admin(username, password)
-                    RecipesSite.current_user = RecipesSite.admins[username]
-                    RecipesSite.current_user_admin = True
+                    RecipesSite._current_user = RecipesSite.admins[username]
+                    RecipesSite._current_user_admin = True
                     print("\nAccount successfully created and logged in.")
                     RecipesSite.write_to_file()
                     create_acc = False
@@ -104,8 +105,8 @@ class RecipesSite:
                         continue
                     password = input("Please enter a password: ")
                     RecipesSite.users[username] = User(username, password)
-                    RecipesSite.current_user = RecipesSite.users[username]
-                    RecipesSite.current_user_admin = False
+                    RecipesSite._current_user = RecipesSite.users[username]
+                    RecipesSite._current_user_admin = False
                     print("\nAccount successfully created and logged in.")
                     RecipesSite.write_to_file()
                     create_acc = False
@@ -114,23 +115,6 @@ class RecipesSite:
                 case _:
                     print("Not a valid option... please try again")
                     continue
-
-    def prompt_home():
-        print("\nWelcome! Please type 1-3 to login or create a new account.")
-        print("[1] Login as admin")
-        print("[2] Login as user")
-        print("[3] Create a new admin/user account")
-
-        option = int(input())
-        match option:
-            case 1:
-                RecipesSite.login_admin()
-            case 2:
-                RecipesSite.login_user()
-            case 3:
-                RecipesSite.create_new_acc()
-            case _:
-                print("Not a valid option... please try again")
 
     def write_to_file():
         # write users
@@ -221,6 +205,7 @@ class Recipe:
         print(f"\nNote: this recipe is {scale}x the original.\n")
         for ingredient in self.ingredients:
             ingredient.print_scaled_ingredient(scale)
+        print("\nTotal recipe cost (scaled): $" + str((self.total_cost)*scale))
 
     def recipe_as_list_str(self):
         output = f"{self.name}:"
@@ -232,6 +217,7 @@ class Recipe:
         output = f"Recipe for {self.name}\nAuthor: {self.author}"
         for ingredient in self.ingredients:
             output += f"\n{ingredient.__str__()}"
+        output += ("\nTotal recipe cost: " + str(self.total_cost))
         return output
 
 class Admin:
@@ -295,7 +281,7 @@ class Admin:
                     self.remove_recipe(num-1)
                     RecipesSite.write_to_file()
             case 4:
-                RecipesSite.current_user = None
+                RecipesSite._current_user = None
                 print(f"\nGoodbye, {self.username}!")
             case _:
                 print("Not a valid option... please try again")
@@ -354,10 +340,12 @@ class User:
                 recipe_selected_idx = self.select_recipe()
                 print("\nHere is the recipe:")
                 print(list(RecipesSite.all_recipes.items())[recipe_selected_idx-1][1])
-            # case 3:
-            #     # TODO
             case 3:
-                RecipesSite.current_user = None
+                recipe_selected_idx = self.select_recipe()
+                scale = float(input("\nHow much would you like to scale your recipe by?\n"))
+                list(RecipesSite.all_recipes.items())[recipe_selected_idx-1][1].print_scaled_recipe(scale)
+            case 4:
+                RecipesSite._current_user = None
                 print(f"\nGoodbye, {self.username}!")
             case _:
                 print("Not a valid option... please try again")
@@ -365,7 +353,6 @@ class User:
 RecipesSite.run_program()
 
 # OTHER TODO:# 
-# scale recipe
 # create/delete account
 # error handling
 # reorg functions
