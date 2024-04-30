@@ -10,7 +10,7 @@ class RecipesSite:
 
     def run_program():
         RecipesSite.read_from_file()
-        RecipesSite.debug_print_data()
+        # RecipesSite.debug_print_data()
         while True:
             if not RecipesSite._current_user:
                 # prompt login
@@ -92,7 +92,7 @@ class RecipesSite:
                         print("Sorry, username is already taken. Please try again.")
                         continue
                     password = input("Please enter a password: ")
-                    RecipesSite.admins[username] = Admin(username, password)
+                    RecipesSite.admins[username] = Admin(username, password, [])
                     RecipesSite._current_user = RecipesSite.admins[username]
                     RecipesSite._current_user_admin = True
                     print("\nAccount successfully created and logged in.")
@@ -239,7 +239,7 @@ class Admin:
     
     def remove_recipe(self, recipe_num: int):
         recipe_to_be_removed_id = self.recipes[recipe_num]
-        print("\n" + RecipesSite.all_recipes[recipe_to_be_removed_id] + " has been removed.")
+        print("\n" + RecipesSite.all_recipes[recipe_to_be_removed_id].__str__() + " has been removed.")
         RecipesSite.all_recipes.pop(recipe_to_be_removed_id)
         del self.recipes[recipe_num]
 

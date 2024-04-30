@@ -1,1 +1,3 @@
 claireysun,beepboop,0,1
+richardmarfo,password,2
+andre,andre
